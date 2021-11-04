@@ -60,20 +60,22 @@ G4VPhysicalVolume* DetectorConstruction::Construct(){
   // Get nist material manager
   G4NistManager* nist = G4NistManager::Instance();
 
-  bool overlapsChecking = false;
+  //bool overlapsChecking = false;
+  bool overlapsChecking = true;
   //bool buildSingleSiPMArray = true;
   bool buildSingleSiPMArray = false;
 
+  G4double projection_surface_R = 208.0*mm;
+  
   //     
   // World
   //
   G4double world_sizeXY = 100*cm;
-  G4double world_sizeZ  = 100*cm;
+  G4double world_sizeZ  = 200*cm;
   G4Material* world_mat = nist->FindOrBuildMaterial("G4_AIR");
   
   G4Box* solidWorld = new G4Box("World", 0.5*world_sizeXY, 0.5*world_sizeXY, 0.5*world_sizeZ);
-  G4LogicalVolume* logicWorld = new G4LogicalVolume(solidWorld,world_mat,"World");
-                                   
+  G4LogicalVolume* logicWorld = new G4LogicalVolume(solidWorld,world_mat,"World");                                   
   G4VPhysicalVolume* physWorld = new G4PVPlacement(0,                     //no rotation
 						   G4ThreeVector(),       //at (0,0,0)
 						   logicWorld,            //its logical volume
@@ -82,6 +84,20 @@ G4VPhysicalVolume* DetectorConstruction::Construct(){
 						   false,                 //no boolean operation
 						   0,                     //copy number
 						   overlapsChecking);     //overlaps checking
+
+  G4double siPMEnvelope_sizeX = 270*mm;
+  G4double siPMEnvelope_sizeY = 140*mm;
+  G4double siPMEnvelope_sizeZ = (2*projection_surface_R + 20*mm);  
+  G4Box* solidSiPMEnvelope = new G4Box("solidSiPMEnvelope", siPMEnvelope_sizeX/2.0, siPMEnvelope_sizeY/2.0, siPMEnvelope_sizeZ/2.0);
+  G4LogicalVolume* logicSiPMEnvelope = new G4LogicalVolume(solidSiPMEnvelope,world_mat,"logicSiPMEnvelope");                                   
+  new G4PVPlacement(0,                     //rotation
+		    G4ThreeVector(0.0,0.0,150*mm),       //position
+		    logicSiPMEnvelope,     //its logical volume
+		    "World",               //its name
+		    logicWorld,            //its mother  volume
+		    false,                 //no boolean operation
+		    0,                     //copy number
+		    overlapsChecking);     //overlaps checking
 
   //
   // Small box for orientation 
@@ -102,6 +118,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct(){
   //
   G4VSolid *boxsmall_centre_solid = new G4Box("boxsmall_centre_solid", 1.0*mm, 1.0*mm, 1.0*mm);
   G4LogicalVolume *boxsmall_centre_logical = new G4LogicalVolume(boxsmall_centre_solid,world_mat,"boxsmall_centre_solid");
+  /*
   if(!buildSingleSiPMArray)
     new G4PVPlacement(0,                       //no rotation
 		      G4ThreeVector(),         //at (0,0,0)
@@ -111,11 +128,11 @@ G4VPhysicalVolume* DetectorConstruction::Construct(){
 		      false,                   //no boolean operation
 		      0,                       //copy number
 		      overlapsChecking);       //overlaps checking
-
+  */
+  
   //
   // SiPM array in the projection surface.
   //
-  G4double projection_surface_R = 208.0*mm;
   G4double projection_surface_effective_R = 65.0*mm; 
   
   G4double sipm_array_L = 14.05*mm;  
@@ -126,7 +143,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct(){
 
   if(buildSingleSiPMArray)
     sipm_array_nOfRings = 1;
-  G4double alpha_y_0 = -20.3/180.0*CLHEP::pi; // Start angle to build up the SiPM array ring
+  //G4double alpha_y_0 = -20.3/180.0*CLHEP::pi; // Start angle to build up the SiPM array ring
+  G4double alpha_y_0 = -224.8/180.0*CLHEP::pi; // Start angle to build up the SiPM array ring
   if(buildSingleSiPMArray)
     alpha_y_0 = 0.0;
 
@@ -273,15 +291,16 @@ G4VPhysicalVolume* DetectorConstruction::Construct(){
       Ta.rotateY(alpha_new*i + alpha_y_0);
       Ra->rotateY(-alpha_new*i - alpha_y_0);
       Ra->rotateX(alpha*ringID);
-      if((sqrt(Ta.x()*Ta.x() + Ta.y()*Ta.y())<projection_surface_effective_R  && Ta.z()<0.0) || buildSingleSiPMArray == true){
-	new G4PVPlacement(Ra,                 //rotation
-			  Ta,                 //translation
+      //if((sqrt(Ta.x()*Ta.x() + Ta.y()*Ta.y())<projection_surface_effective_R  && Ta.z()<0.0) || buildSingleSiPMArray == true){
+      if((abs(Ta.x())<projection_surface_effective_R*2.0  && abs(Ta.y())<projection_surface_effective_R && Ta.z() < 0.0) || buildSingleSiPMArray == true){
+	new G4PVPlacement(Ra,                    //rotation
+			  Ta,                    //translation
 			  sipm_array_logical,    //its logical volume
 			  "sipm_array_physical", //its name
-			  logicWorld,            //its mother  volume
+			  logicSiPMEnvelope,     //its mother  volume
 			  false,                 //no boolean operation
-			  0,                    //copy number
-			  overlapsChecking);  //overlaps checking
+			  0,                     //copy number
+			  overlapsChecking);     //overlaps checking
       }
     }
   }
@@ -303,15 +322,16 @@ G4VPhysicalVolume* DetectorConstruction::Construct(){
       Ta.rotateY(alpha_new*i + alpha_y_0);
       Ra->rotateY(-alpha_new*i - alpha_y_0);
       Ra->rotateX(-alpha*ringID);
-      if(sqrt(Ta.x()*Ta.x() + Ta.y()*Ta.y())<projection_surface_effective_R && Ta.z()<0.0){
-	new G4PVPlacement(Ra,                 //rotation
-			  Ta,                 //translation
+      //if(sqrt(Ta.x()*Ta.x() + Ta.y()*Ta.y())<projection_surface_effective_R && Ta.z()<0.0){
+      if((abs(Ta.x())<projection_surface_effective_R*2.0  && abs(Ta.y())<projection_surface_effective_R && Ta.z() < 0.0) || buildSingleSiPMArray == true){
+	new G4PVPlacement(Ra,                    //rotation
+			  Ta,                    //translation
 			  sipm_array_logical,    //its logical volume
 			  "sipm_array_physical", //its name
-			  logicWorld,         //its mother  volume
-			  false,              //no boolean operation
-			  0,                  //copy number
-			  overlapsChecking);  //overlaps checking
+			  logicSiPMEnvelope,     //its mother  volume
+			  false,                 //no boolean operation
+			  0,                     //copy number
+			  overlapsChecking);     //overlaps checking
       }
     }
   }
