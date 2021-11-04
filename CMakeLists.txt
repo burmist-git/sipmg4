@@ -35,8 +35,8 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 #----------------------------------------------------------------------------
 # Add the executable, and link it to the Geant4 libraries
 #
-add_executable(subtruct subtruct.cc ${sources} ${headers})
-target_link_libraries(subtruct ${Geant4_LIBRARIES})
+add_executable(sipm sipm.cc ${sources} ${headers})
+target_link_libraries(sipm ${Geant4_LIBRARIES})
 
 #----------------------------------------------------------------------------
 # Copy all scripts to the build directory, i.e. the directory in which we
@@ -57,8 +57,14 @@ foreach(_script ${EXAMPLEB1_SCRIPTS})
 endforeach()
 
 #----------------------------------------------------------------------------
+# For internal Geant4 use - but has no effect if you build this
+# example standalone
+#
+add_custom_target(B1 DEPENDS sipm)
+
+#----------------------------------------------------------------------------
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
 #
-install(TARGETS subtruct DESTINATION bin)
+install(TARGETS sipm DESTINATION bin)
 
 
