@@ -37,6 +37,7 @@
 #include "G4PVPlacement.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4VisAttributes.hh"
+#include "G4SubtractionSolid.hh"
 
 #include "globals.hh"
 
@@ -85,10 +86,28 @@ G4VPhysicalVolume* DetectorConstruction::Construct(){
 						   0,                     //copy number
 						   overlapsChecking);     //overlaps checking
 
-  G4double siPMEnvelope_sizeX = 270*mm;
-  G4double siPMEnvelope_sizeY = 140*mm;
-  G4double siPMEnvelope_sizeZ = (2*projection_surface_R + 20*mm);  
-  G4Box* solidSiPMEnvelope = new G4Box("solidSiPMEnvelope", siPMEnvelope_sizeX/2.0, siPMEnvelope_sizeY/2.0, siPMEnvelope_sizeZ/2.0);
+  G4double siPMEnvelope1_sizeX = 270*mm;
+  G4double siPMEnvelope1_sizeY = 140*mm;
+  G4double siPMEnvelope1_sizeZ = (2*projection_surface_R + 20*mm);  
+  G4Box* solidSiPMEnvelope1 = new G4Box("solidSiPMEnvelope1", siPMEnvelope1_sizeX/2.0, siPMEnvelope1_sizeY/2.0, siPMEnvelope1_sizeZ/2.0);
+  G4double siPMEnvelope2_sizeX = siPMEnvelope1_sizeX + 10*mm;
+  G4double siPMEnvelope2_sizeY = siPMEnvelope1_sizeY + 10*mm;
+  G4double siPMEnvelope2_sizeZ = siPMEnvelope1_sizeZ - 70*mm;  
+  G4Box* solidSiPMEnvelope2 = new G4Box("solidSiPMEnvelope2", siPMEnvelope2_sizeX/2.0, siPMEnvelope2_sizeY/2.0, siPMEnvelope2_sizeZ/2.0);
+  G4RotationMatrix* rotMatrix = new G4RotationMatrix();
+  G4ThreeVector transVector(0.0,0.0,(siPMEnvelope1_sizeZ - siPMEnvelope2_sizeZ)/2.0+10*mm);
+  G4SubtractionSolid *solid_SiPMEnvelope1_m_SiPMEnvelope2 = new G4SubtractionSolid("solid_SiPMEnvelope1_m_SiPMEnvelope2",solidSiPMEnvelope1,solidSiPMEnvelope2,rotMatrix,transVector);
+  G4LogicalVolume* logic_SiPMEnvelope1_m_SiPMEnvelope2 = new G4LogicalVolume(solid_SiPMEnvelope1_m_SiPMEnvelope2,world_mat,"logicSiPMEnvelope2");
+  new G4PVPlacement(0,                                       //rotation
+                    G4ThreeVector(0.0,0.0,130*mm),            //position
+                    logic_SiPMEnvelope1_m_SiPMEnvelope2,     //its logical volume
+                    "logic_SiPMEnvelope1_m_SiPMEnvelope2",   //its name
+                    logicWorld,            //its mother  volume
+                    false,                 //no boolean operation
+                    0,                     //copy number
+                    overlapsChecking);     //overlaps checking
+
+  /*
   G4LogicalVolume* logicSiPMEnvelope = new G4LogicalVolume(solidSiPMEnvelope,world_mat,"logicSiPMEnvelope");                                   
   new G4PVPlacement(0,                     //rotation
 		    G4ThreeVector(0.0,0.0,150*mm),       //position
@@ -98,7 +117,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct(){
 		    false,                 //no boolean operation
 		    0,                     //copy number
 		    overlapsChecking);     //overlaps checking
-
+  */
+  
   //
   // Small box for orientation 
   //
@@ -118,7 +138,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct(){
   //
   G4VSolid *boxsmall_centre_solid = new G4Box("boxsmall_centre_solid", 1.0*mm, 1.0*mm, 1.0*mm);
   G4LogicalVolume *boxsmall_centre_logical = new G4LogicalVolume(boxsmall_centre_solid,world_mat,"boxsmall_centre_solid");
-  /*
   if(!buildSingleSiPMArray)
     new G4PVPlacement(0,                       //no rotation
 		      G4ThreeVector(),         //at (0,0,0)
@@ -128,7 +147,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct(){
 		      false,                   //no boolean operation
 		      0,                       //copy number
 		      overlapsChecking);       //overlaps checking
-  */
   
   //
   // SiPM array in the projection surface.
@@ -297,7 +315,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct(){
 			  Ta,                    //translation
 			  sipm_array_logical,    //its logical volume
 			  "sipm_array_physical", //its name
-			  logicSiPMEnvelope,     //its mother  volume
+			  logic_SiPMEnvelope1_m_SiPMEnvelope2,     //its mother  volume
 			  false,                 //no boolean operation
 			  0,                     //copy number
 			  overlapsChecking);     //overlaps checking
@@ -328,7 +346,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct(){
 			  Ta,                    //translation
 			  sipm_array_logical,    //its logical volume
 			  "sipm_array_physical", //its name
-			  logicSiPMEnvelope,     //its mother  volume
+			  logic_SiPMEnvelope1_m_SiPMEnvelope2,     //its mother  volume
 			  false,                 //no boolean operation
 			  0,                     //copy number
 			  overlapsChecking);     //overlaps checking
